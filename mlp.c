@@ -11,6 +11,7 @@ neuron* mlp_new(int num_front, int num_back)
     init_weight(num_front, num_back, m->weight);
     print_weight(num_front, num_back, m->weight);
     m->next = NULL;
+    m->prev = NULL;
 }
 
 void add_neuron(neuron** head, int index, int num_front, int num_back)
@@ -32,6 +33,7 @@ void add_neuron(neuron** head, int index, int num_front, int num_back)
     while (last->next != NULL)
         last = last->next;
     last->next = n;
+    n->prev = last;
     return;
 }
 
@@ -55,11 +57,20 @@ void print_weight(int row, int col, gsl_matrix_float* weight)
 void print_all_weight(neuron* head)
 {
     neuron* temp = head;
+    neuron* temp_reverse;
     while (temp != NULL) {
         printf("weight index %d\r\n", temp->index);
         print_weight(temp->num_front, temp->num_back, temp->weight);
+        temp_reverse = temp;
         temp = temp->next;
     }
+    free(temp);
+    /*while (temp_reverse != NULL) {
+        printf("weight reverse index %d\r\n", temp_reverse->index);
+        print_weight(temp_reverse->num_front, temp_reverse->num_back, temp_reverse->weight);
+        temp_reverse = temp_reverse->prev;
+    }*/
+    free(temp_reverse);
 }
 
 void print_all_activations(neuron* head)
@@ -70,6 +81,7 @@ void print_all_activations(neuron* head)
         print_weight(1, temp->num_back, temp->activations);
         temp = temp->next;
     }
+    free(temp);
 }
 
 gsl_matrix_float* dot_product(int num_front, int num_back, gsl_matrix_float* m1, gsl_matrix_float* m2)

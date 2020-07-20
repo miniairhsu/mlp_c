@@ -13,6 +13,7 @@ struct Neuron {
     gsl_matrix_float* activations;
     gsl_matrix_float* weight;
     struct Neuron *next;
+    struct Neuron *prev;
 };
 
 typedef struct Neuron neuron; 

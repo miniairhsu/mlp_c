@@ -11,6 +11,7 @@ int main()
     gsl_matrix_float* outputs = gsl_matrix_float_alloc(1, 2);
     forward_propogate(a1, mlp, outputs);
     print_all_activations(mlp);
+    print_all_weight(mlp);
     /*for (int i = 0; i < mlp->num_back; i++) {
         printf("mlp activations %d %f\r\n", i, gsl_matrix_float_get(mlp->activations,0, i));
     }*/
