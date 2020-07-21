@@ -27,7 +27,11 @@ gsl_matrix_float* dot_product(int num_front, int num_back, gsl_matrix_float* m1,
 
 gsl_matrix_float* sigmoid_matrix(gsl_matrix_float* net_inputs, int row, int col); 
 
+gsl_matrix_float* sigmoid_matrix_derivative(gsl_matrix_float* net_inputs, int row, int col);
+
 void forward_propogate(gsl_matrix_float* inputs, neuron* mlp, gsl_matrix_float* outputs);
+
+void back_propogate(gsl_matrix_float* inputs, neuron* mlp, gsl_matrix_float* outputs);
 
 void print_weight(int row, int col, gsl_matrix_float* weight);
 

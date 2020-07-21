@@ -111,6 +111,19 @@ gsl_matrix_float* sigmoid_matrix(gsl_matrix_float* net_inputs, int row, int col)
     return output;
 }
 
+gsl_matrix_float* sigmoid_matrix_derivative(gsl_matrix_float* net_inputs, int row, int col)
+{
+    gsl_matrix_float* output = gsl_matrix_float_alloc(row, col);
+    for (int i = 0; i < row; i++) {
+        for (int j = 0; j < col; j++) {
+            float result = gsl_matrix_float_get(net_inputs, i, j);
+            result = result / (1 - result);
+            gsl_matrix_float_set(output, i, j, result);
+        }
+    }
+    return output;
+}
+
 void forward_propogate(gsl_matrix_float* inputs, neuron* mlp, gsl_matrix_float* outputs)
 {
     neuron* temp = mlp;
@@ -123,4 +136,21 @@ void forward_propogate(gsl_matrix_float* inputs, neuron* mlp, gsl_matrix_float* 
         temp = temp->next;
     }
     return;
+}
+
+void back_propogate(gsl_matrix_float* error, neuron* mlp, gsl_matrix_float* outputs)
+{
+    neuron* temp = mlp;
+    neuron* temp_reverse;
+    while (temp != NULL) {
+        temp_reverse = temp;
+        temp = temp->next;
+    }
+
+    while (temp_reverse != NULL) {
+        gsl_matrix_float* drivatives = sigmoid_matrix_derivative(temp_reverse->activations, 1, temp_reverse->num_back);
+        gsl_matrix_float_mul_elements(drivatives, error);
+    }
+    free(temp_reverse);
+    free(temp);
 }
