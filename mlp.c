@@ -6,6 +6,7 @@ neuron* mlp_new(int num_front, int num_back)
     m->index = 0;
     m->num_front = num_front;
     m->num_back = num_back;
+    m->inputs = gsl_matrix_float_alloc(1, num_front);
     m->weight = gsl_matrix_float_alloc(num_front, num_back);
     m->activations = gsl_matrix_float_alloc(1, num_back);
     init_weight(num_front, num_back, m->weight);
@@ -21,6 +22,7 @@ void add_neuron(neuron** head, int index, int num_front, int num_back)
     n->index = index;
     n->num_front = num_front;
     n->num_back = num_back;
+    n->inputs = gsl_matrix_float_alloc(1, num_front);
     n->weight = gsl_matrix_float_alloc(num_front, num_back);
     n->activations = gsl_matrix_float_alloc(1, num_back);
     init_weight(num_front, num_back, n->weight);
@@ -30,10 +32,12 @@ void add_neuron(neuron** head, int index, int num_front, int num_back)
         *head = n;
         return;
     }
-    while (last->next != NULL)
+    while (last->next != NULL) {
         last = last->next;
+    }
     last->next = n;
     n->prev = last;
+    last = last->next;
     return;
 }
 
@@ -124,32 +128,65 @@ gsl_matrix_float* sigmoid_matrix_derivative(gsl_matrix_float* net_inputs, int ro
     return output;
 }
 
-void forward_propogate(gsl_matrix_float* inputs, neuron* mlp, gsl_matrix_float* outputs)
+void forward_propogate(gsl_matrix_float* input, neuron* mlp, gsl_matrix_float* outputs)
 {
     neuron* temp = mlp;
-    gsl_matrix_float* activations = inputs;
+    mlp->inputs = input;
+    temp->inputs = input;
     while (temp != NULL) {
-        gsl_matrix_float* net_inputs = dot_product(temp->num_front, temp->num_back, activations, temp->weight);
-        temp->activations = sigmoid_matrix(net_inputs, 1, temp->num_back);
-        activations = temp->activations;
+        gsl_matrix_float* net_inputs = dot_product(temp->num_front, temp->num_back, temp->inputs, temp->weight);
+        gsl_matrix_float* sigmoid = sigmoid_matrix(net_inputs, 1, temp->num_back);
+        gsl_matrix_float_memcpy(temp->activations, sigmoid);
+        if (temp->next != NULL) {
+           gsl_matrix_float_memcpy((temp->next)->inputs, temp->activations);
+        }
         gsl_matrix_float_free(net_inputs);
+        gsl_matrix_float_free(sigmoid);
         temp = temp->next;
     }
     return;
 }
 
-void back_propogate(gsl_matrix_float* error, neuron* mlp, gsl_matrix_float* outputs)
+void back_propogate(gsl_matrix_float* inputs, gsl_matrix_float* error, neuron* mlp, gsl_matrix_float* outputs)
 {
     neuron* temp = mlp;
-    neuron* temp_reverse;
+    neuron* temp_reverse = temp;
+    //temp_reverse->activations = inputs;
     while (temp != NULL) {
         temp_reverse = temp;
         temp = temp->next;
     }
-
     while (temp_reverse != NULL) {
         gsl_matrix_float* drivatives = sigmoid_matrix_derivative(temp_reverse->activations, 1, temp_reverse->num_back);
         gsl_matrix_float_mul_elements(drivatives, error);
+        print_weight(1, temp_reverse->num_back, drivatives);
+        gsl_matrix_float* temp_matrix = gsl_matrix_float_alloc(temp_reverse->num_front, 1);
+        gsl_matrix_float* temp_result = gsl_matrix_float_alloc(temp_reverse->num_front, temp_reverse->num_back);
+        gsl_matrix_float_transpose_memcpy(temp_matrix, (temp_reverse)->inputs);
+        gsl_blas_sgemm (CblasNoTrans, CblasNoTrans,
+                    1.0, temp_matrix, drivatives,
+                    0.0, temp_result);
+        //print_weight(temp_reverse->num_front, temp_reverse->num_back, temp_result);
+        error = dot_product(temp_reverse->num_front, temp_reverse->num_back, drivatives, temp_reverse->weight);
+        gsl_matrix_float_free(temp_matrix);
+        gsl_matrix_float_free(temp_result);
+        /*gsl_matrix_float* temp_result = gsl_matrix_float_alloc(temp_reverse->num_front, temp_reverse->num_back);
+        gsl_blas_sgemm (CblasNoTrans, CblasNoTrans,
+                    1.0, temp_matrix, drivatives,
+                    0.0, temp_result);*/
+       
+        /*gsl_matrix_float* temp_matrix = gsl_matrix_float_alloc(temp_reverse->num_back, temp_reverse->num_front);
+        gsl_matrix_float* temp_result = gsl_matrix_float_alloc(temp_reverse->num_front, temp_reverse->num_back);
+        gsl_matrix_float_transpose_memcpy(temp_matrix, (temp_reverse->prev)->activations);
+        print_weight(temp_reverse->num_back, temp_reverse->num_front, temp_matrix);
+        gsl_blas_sgemm (CblasNoTrans, CblasNoTrans,
+                    1.0, temp_matrix, drivatives,
+                    0.0, temp_result);
+        print_weight(temp_reverse->num_front, temp_reverse->num_back, temp_result);
+        gsl_matrix_float_free(temp_matrix);
+        gsl_matrix_float_free(temp_result);*/
+        temp_reverse = temp_reverse->prev;
+
     }
     free(temp_reverse);
     free(temp);
