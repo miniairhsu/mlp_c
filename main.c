@@ -43,6 +43,12 @@ int main()
                 1.0, a6, a4,
                 0.0, a5);
     print_weight(2, 2, a5);*/
+    gsl_matrix_float* input2 = gsl_matrix_float_alloc(1, 2);
+    gsl_matrix_float_set(input2, 0, 0, 0.1);
+    gsl_matrix_float_set(input2, 0, 1, 0.2);
+    neuron* mlp2 = load_model();
+    gsl_matrix_float* outputs2 = gsl_matrix_float_alloc(1, 2);
+    forward_propogate(input2, mlp2, outputs2);
                 
 
     return 0;

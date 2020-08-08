@@ -1,4 +1,5 @@
 #include "mlp.h"
+#include "weight_table.h"
 
 neuron* mlp_new(int num_front, int num_back)
 {
@@ -11,8 +12,9 @@ neuron* mlp_new(int num_front, int num_back)
     m->weight_derivative = gsl_matrix_float_alloc(num_front, num_back);
     m->pre_activations = gsl_matrix_float_alloc(1, num_back);
     m->activations = gsl_matrix_float_alloc(1, num_back);
+    m->bias = gsl_matrix_float_alloc(1, num_back);
     init_weight(num_front, num_back, m->weight);
-    print_weight(num_front, num_back, m->weight);
+    //print_weight(num_front, num_back, m->weight);
     m->next = NULL;
     m->prev = NULL;
 }
@@ -29,8 +31,9 @@ void add_neuron(neuron** head, int index, int num_front, int num_back)
     n->weight_derivative = gsl_matrix_float_alloc(num_front, num_back);
     n->pre_activations = gsl_matrix_float_alloc(1, num_back);
     n->activations = gsl_matrix_float_alloc(1, num_back);
+    n->bias = gsl_matrix_float_alloc(1, num_back);
     init_weight(num_front, num_back, n->weight);
-    print_weight(num_front, num_back, n->weight);
+    //print_weight(num_front, num_back, n->weight);
     n->next = NULL;
     if (head == NULL) {
         *head = n;
@@ -52,6 +55,22 @@ void init_weight(int row, int col, gsl_matrix_float* weight)
         for (int j = 0; j < col; j++)
             gsl_matrix_float_set(weight, i, j, (float)rand()/RAND_MAX);
     return;
+}
+
+void set_weight(int num_row, int num_col, neuron* mlp, float* weight_table)
+{
+    for(int i = 0; i < num_row; i++) {
+        for (int j = 0; j < num_col; j++) {
+            gsl_matrix_float_set(mlp->weight, i, j, weight_table[i*num_col+j]);
+        }
+    }
+}
+
+void set_bias(int num_col, neuron* mlp, float* weight_table)
+{
+    for (int j = 0; j < num_col; j++) {
+        gsl_matrix_float_set(mlp->bias, 0, j, weight_table[j]);
+    }
 }
 
 void print_weight(int row, int col, gsl_matrix_float* weight)
@@ -108,6 +127,24 @@ void dot_product(int num_front, int num_back, gsl_matrix_float* m1, gsl_matrix_f
     //return outputs;
 }
 
+void dot_product_bias(int num_front, int num_back, gsl_matrix_float* m1, gsl_matrix_float* m2, gsl_matrix_float* bias, 
+    gsl_matrix_float* output)
+{
+    //gsl_matrix_float* outputs = gsl_matrix_float_alloc(1, num_back);
+    //for (int i = 0; i < num_inputs; i++) {
+        gsl_vector_float_view row_m1 = gsl_matrix_float_row(m1, 0);
+        for (int j = 0; j < num_back; j++) {
+            float result = 0;
+            gsl_vector_float_view col_m2 = gsl_matrix_float_column(m2, j);
+            gsl_blas_sdot(&row_m1.vector, &col_m2.vector, &result);
+            result += gsl_matrix_float_get(bias, 0, j);
+            gsl_matrix_float_set(output, 0, j, result);
+
+        }
+    //}
+    //return outputs;
+}
+
 gsl_matrix_float* sigmoid_matrix(gsl_matrix_float* net_inputs, int row, int col)
 {
     gsl_matrix_float* output = gsl_matrix_float_alloc(row, col);
@@ -142,13 +179,13 @@ void forward_propogate(gsl_matrix_float* input, neuron* mlp, gsl_matrix_float* o
     while (temp != NULL) {
         printf("forward progation layer %d inputs\r\n", temp->index);
         print_weight(1, temp->num_front, temp->inputs);
-        dot_product(temp->num_front, temp->num_back, temp->inputs, temp->weight, net_inputs);
+        dot_product_bias(temp->num_front, temp->num_back, temp->inputs, temp->weight, temp->bias, net_inputs);
         gsl_matrix_float_memcpy(temp->pre_activations, net_inputs);
         printf("forward progation pre activation\r\n");
         print_weight(1, temp->num_back, temp->pre_activations);
         gsl_matrix_float* sigmoid = sigmoid_matrix(net_inputs, 1, temp->num_back);
         gsl_matrix_float_memcpy(temp->activations, sigmoid);
-         printf("forward progation activation\r\n");
+        printf("forward progation activation\r\n");
         print_weight(1, temp->num_back, temp->activations);
         if (temp->next != NULL) {
            gsl_matrix_float_memcpy((temp->next)->inputs, temp->activations);
@@ -212,4 +249,36 @@ void back_propogate(gsl_matrix_float* inputs, gsl_matrix_float* error, neuron* m
     gsl_matrix_float_free(weight_trans);
     free(temp_reverse);
     free(temp);
+}
+
+neuron* load_model()
+{
+    int index = 0;
+    int layer_size = NUM_LAYER;
+    int* weight_size = load_weight_size();
+    float* weights = load_weights();
+    neuron* mlp = mlp_new(weight_size[0], weight_size[1]);
+    neuron* mlp_ret = mlp;
+    int* weight_size_temp = weight_size;
+    float* weights_temp = weights;
+    index++;
+    int weight_index = 0;
+    int bias_index = weight_size[0] * weight_size[1];
+    for (int i = 0; i < layer_size; i++) {
+        printf("Layer %d\r\n", i);
+        set_weight(weight_size[i*3], weight_size[i*3+1], mlp, &weights[weight_index]);
+        set_bias(weight_size[i*3+2], mlp, &weights[bias_index]);
+        weight_index = weight_index + weight_size[i*3] * weight_size[i*3+1] + weight_size[i*3+2]; 
+        print_weight(weight_size[i*3], weight_size[i*3+1], mlp->weight);  
+        print_weight(1, weight_size[i*3+2], mlp->bias);  
+        if (i < (layer_size -1)) {
+            weight_size_temp = (&weight_size[(i+1)*3]);
+            bias_index = weight_index + weight_size_temp[0] * weight_size_temp[1];
+            add_neuron(&mlp, index, weight_size_temp[0], weight_size_temp[1]);
+            mlp = mlp->next;
+        }
+        index++;
+        
+    }
+    return mlp_ret;
 }
