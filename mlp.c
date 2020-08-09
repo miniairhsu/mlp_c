@@ -1,7 +1,7 @@
 #include "mlp.h"
 #include "weight_table.h"
 
-neuron *mlp_new(int num_front, int num_back)
+neuron *mlp_new(int num_front, int num_back, int* activation_type)
 {
 	neuron *m = (neuron *)malloc(sizeof(neuron));
 	m->index = 0;
@@ -13,14 +13,16 @@ neuron *mlp_new(int num_front, int num_back)
 	m->pre_activations = gsl_matrix_float_alloc(1, num_back);
 	m->activations = gsl_matrix_float_alloc(1, num_back);
 	m->bias = gsl_matrix_float_alloc(1, num_back);
-	set_activation(m, sigmoid_matrix);
+	if (activation_type[0] == SIGMOID) {
+		set_activation(m, sigmoid_matrix);
+	}
 	init_weight(num_front, num_back, m->weight);
 	// print_weight(num_front, num_back, m->weight);
 	m->next = NULL;
 	m->prev = NULL;
 }
 
-void add_neuron(neuron **head, int index, int num_front, int num_back)
+void add_neuron(neuron **head, int index, int num_front, int num_back, int* activation_type)
 {
 	neuron *n = (neuron *)malloc(sizeof(neuron));
 	neuron *last = *head;
@@ -33,7 +35,9 @@ void add_neuron(neuron **head, int index, int num_front, int num_back)
 	n->pre_activations = gsl_matrix_float_alloc(1, num_back);
 	n->activations = gsl_matrix_float_alloc(1, num_back);
 	n->bias = gsl_matrix_float_alloc(1, num_back);
-	set_activation(n, sigmoid_matrix);
+	if (activation_type[index] == SIGMOID) {
+		set_activation(n, sigmoid_matrix);
+	}
 	init_weight(num_front, num_back, n->weight);
 	// print_weight(num_front, num_back, n->weight);
 	n->next = NULL;
@@ -52,7 +56,7 @@ void add_neuron(neuron **head, int index, int num_front, int num_back)
 
 void set_activation(neuron* mlp, gsl_matrix_float* (*activation) (gsl_matrix_float*, int, int))
 {
-	mlp->activation = activation;
+	mlp->activation_call = activation;
 }
 
 void init_weight(int row, int col, gsl_matrix_float *weight)
@@ -159,11 +163,7 @@ gsl_matrix_float *sigmoid_matrix(gsl_matrix_float *net_inputs, int row, int col)
 	gsl_matrix_float *output = gsl_matrix_float_alloc(row, col);
 	for (int i = 0; i < row; i++) {
 		for (int j = 0; j < col; j++) {
-			float result = 1
-				       / (1
-					  + expf(-1
-						 * gsl_matrix_float_get(
-							 net_inputs, i, j)));
+			float result = 1 / (1 + expf(-1 * gsl_matrix_float_get(net_inputs, i, j)));
 			gsl_matrix_float_set(output, i, j, result);
 		}
 	}
@@ -200,9 +200,8 @@ void forward_propogate(gsl_matrix_float *input, neuron *mlp,
 		gsl_matrix_float_memcpy(temp->pre_activations, net_inputs);
 		printf("forward progation pre activation\r\n");
 		print_weight(1, temp->num_back, temp->pre_activations);
-		gsl_matrix_float *sigmoid =
-			sigmoid_matrix(net_inputs, 1, temp->num_back);
-		gsl_matrix_float_memcpy(temp->activations, sigmoid);
+		gsl_matrix_float *act_out = temp->activation_call(net_inputs, 1, temp->num_back);
+		gsl_matrix_float_memcpy(temp->activations, act_out);
 		printf("forward progation activation\r\n");
 		print_weight(1, temp->num_back, temp->activations);
 		if (temp->next != NULL) {
@@ -211,7 +210,7 @@ void forward_propogate(gsl_matrix_float *input, neuron *mlp,
 			net_inputs = gsl_matrix_float_calloc(
 				1, (temp->next)->num_back);
 		}
-		gsl_matrix_float_free(sigmoid);
+		gsl_matrix_float_free(act_out);
 		temp = temp->next;
 	}
 	gsl_matrix_float_free(net_inputs);
@@ -295,8 +294,9 @@ neuron *load_model()
 	int index = 0;
 	int layer_size = NUM_LAYER;
 	int *weight_size = load_weight_size();
+	int *activation_type = load_activation_type();
 	float *weights = load_weights();
-	neuron *mlp = mlp_new(weight_size[0], weight_size[1]);
+	neuron *mlp = mlp_new(weight_size[0], weight_size[1], activation_type);
 	neuron *mlp_ret = mlp;
 	int *weight_size_temp = weight_size;
 	float *weights_temp = weights;
@@ -320,7 +320,7 @@ neuron *load_model()
 				weight_index
 				+ weight_size_temp[0] * weight_size_temp[1];
 			add_neuron(&mlp, index, weight_size_temp[0],
-				   weight_size_temp[1]);
+				   weight_size_temp[1], activation_type);
 			mlp = mlp->next;
 		}
 		index++;

@@ -2,9 +2,9 @@
 
 int main()
 {
-    neuron* mlp =  mlp_new(2, 3);
+    //neuron* mlp =  mlp_new(2, 3);
     //print_all_weight(mlp);
-    gsl_matrix_float* input = gsl_matrix_float_alloc(1, 2);
+    /*gsl_matrix_float* input = gsl_matrix_float_alloc(1, 2);
     gsl_matrix_float_set(input, 0, 0, 1);
     gsl_matrix_float_set(input, 0, 1, 2);
     add_neuron(&mlp, 1, 3, 2);
@@ -14,7 +14,7 @@ int main()
     gsl_matrix_float* error = gsl_matrix_float_alloc(1, 2);
     gsl_matrix_float_set(error, 0, 0, 0.1);
     gsl_matrix_float_set(error, 0, 1, 0.2);
-    back_propogate(input, error, mlp, outputs);
+    back_propogate(input, error, mlp, outputs);*/
     //print_all_weight(mlp);
     /*for (int i = 0; i < mlp->num_back; i++) {
         printf("mlp activations %d %f\r\n", i, gsl_matrix_float_get(mlp->activations,0, i));

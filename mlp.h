@@ -16,15 +16,15 @@ struct Neuron {
     gsl_matrix_float* weight;
     gsl_matrix_float* weight_derivative;
     gsl_matrix_float* bias;
-    gsl_matrix_float* (*activation) (gsl_matrix_float*, int, int);
+    gsl_matrix_float* (*activation_call) (gsl_matrix_float*, int, int);
     struct Neuron *next;
     struct Neuron *prev;
 };
 
 typedef struct Neuron neuron; 
-neuron* mlp_new(int num_front, int num_back);
+neuron* mlp_new(int num_front, int num_back, int* activation_type);
 
-void add_neuron(neuron** head, int index, int num_front, int num_back);
+void add_neuron(neuron **head, int index, int num_front, int num_back, int* activation_type);
 
 void init_weight(int row, int col, gsl_matrix_float* weight);
 
