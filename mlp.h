@@ -16,6 +16,7 @@ struct Neuron {
     gsl_matrix_float* weight;
     gsl_matrix_float* weight_derivative;
     gsl_matrix_float* bias;
+    gsl_matrix_float* (*activation) (gsl_matrix_float*, int, int);
     struct Neuron *next;
     struct Neuron *prev;
 };
@@ -31,6 +32,8 @@ void dot_product(int num_front, int num_back, gsl_matrix_float* m1, gsl_matrix_f
 
 void dot_product_bias(int num_front, int num_back, gsl_matrix_float* m1, gsl_matrix_float* m2, gsl_matrix_float* bias, 
     gsl_matrix_float* output);
+
+void set_activation(neuron* mlp, gsl_matrix_float* (*activation) (gsl_matrix_float*, int, int));
 
 gsl_matrix_float* sigmoid_matrix(gsl_matrix_float* net_inputs, int row, int col); 
 
