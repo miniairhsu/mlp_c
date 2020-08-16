@@ -15,6 +15,10 @@ neuron *mlp_new(int num_front, int num_back, int* activation_type)
 	m->bias = gsl_matrix_float_alloc(1, num_back);
 	if (activation_type[0] == SIGMOID) {
 		set_activation(m, sigmoid_matrix);
+	} else if (activation_type[0] == RELU) {
+		set_activation(m, relu_matrix); 
+	} else {
+		set_activation(m, softmax_matrix);
 	}
 	init_weight(num_front, num_back, m->weight);
 	// print_weight(num_front, num_back, m->weight);
@@ -37,6 +41,10 @@ void add_neuron(neuron **head, int index, int num_front, int num_back, int* acti
 	n->bias = gsl_matrix_float_alloc(1, num_back);
 	if (activation_type[index] == SIGMOID) {
 		set_activation(n, sigmoid_matrix);
+	} else if (activation_type[index] == RELU) {
+		set_activation(n, relu_matrix);
+	} else {
+		set_activation(n, softmax_matrix);
 	}
 	init_weight(num_front, num_back, n->weight);
 	// print_weight(num_front, num_back, n->weight);
@@ -166,6 +174,38 @@ gsl_matrix_float *sigmoid_matrix(gsl_matrix_float *net_inputs, int row, int col)
 			float result = 1 / (1 + expf(-1 * gsl_matrix_float_get(net_inputs, i, j)));
 			gsl_matrix_float_set(output, i, j, result);
 		}
+	}
+	return output;
+}
+
+gsl_matrix_float *relu_matrix(gsl_matrix_float *net_inputs, int row, int col)
+{
+	gsl_matrix_float *output = gsl_matrix_float_alloc(row, col);
+	for (int i = 0; i < row; i++) {
+		for (int j = 0; j < col; j++) {
+			float result = (gsl_matrix_float_get(net_inputs, i, j) > 0) ? gsl_matrix_float_get(net_inputs, i, j) : 0;
+			gsl_matrix_float_set(output, i, j, result);
+		}
+	}
+	return output;
+}
+
+gsl_matrix_float* softmax_matrix(gsl_matrix_float *net_inputs, int row, int col)
+{
+	gsl_matrix_float *output = gsl_matrix_float_alloc(row, col);
+	float e_sum = 0;
+	float* softmax_ptr = (float *)malloc(sizeof(float) * col);
+	for (int i = 0; i < row; i++) {
+		for (int j = 0; j < col; j++) {
+			float temp = expf(gsl_matrix_float_get(net_inputs, i, j));
+			e_sum += temp;
+			softmax_ptr[j] = temp;
+		}
+		for (int j = 0; j < col; j++) {
+			float result = softmax_ptr[j] / e_sum;
+			gsl_matrix_float_set(output, i, j, result);
+		}
+		e_sum = 0;
 	}
 	return output;
 }

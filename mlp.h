@@ -37,6 +37,10 @@ void set_activation(neuron* mlp, gsl_matrix_float* (*activation) (gsl_matrix_flo
 
 gsl_matrix_float* sigmoid_matrix(gsl_matrix_float* net_inputs, int row, int col); 
 
+gsl_matrix_float* relu_matrix(gsl_matrix_float *net_inputs, int row, int col);
+
+gsl_matrix_float* softmax_matrix(gsl_matrix_float *net_inputs, int row, int col);
+
 void sigmoid_matrix_derivative(gsl_matrix_float* net_inputs, int row, int col, gsl_matrix_float* output);
 
 void forward_propogate(gsl_matrix_float* input, neuron* mlp, gsl_matrix_float* outputs);
