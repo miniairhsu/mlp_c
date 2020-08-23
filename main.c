@@ -44,12 +44,21 @@ int main()
                 0.0, a5);
     print_weight(2, 2, a5);*/
     gsl_matrix_float* input2 = gsl_matrix_float_alloc(1, 2);
-    gsl_matrix_float_set(input2, 0, 0, 0.1);
-    gsl_matrix_float_set(input2, 0, 1, 0.2);
+    gsl_matrix_float_set(input2, 0, 0, 1);
+    gsl_matrix_float_set(input2, 0, 1, 1);
+    /*gsl_matrix_float_set(input2, 0, 2, -0.52111599);
+    gsl_matrix_float_set(input2, 0, 3, 0.91601335);
+    gsl_matrix_float_set(input2, 0, 4, 0.10961719);
+    gsl_matrix_float_set(input2, 0, 5, -0.68538967);
+    gsl_matrix_float_set(input2, 0, 6, -0.2569057);
+    gsl_matrix_float_set(input2, 0, 7, 0.8095029);
+    gsl_matrix_float_set(input2, 0, 8, 0.64259497);
+    gsl_matrix_float_set(input2, 0, 9, 0.9687384);
+    gsl_matrix_float_set(input2, 0, 10, -0.87203322);*/
     neuron* mlp2 = load_model();
     gsl_matrix_float* outputs2 = gsl_matrix_float_alloc(1, 2);
     forward_propogate(input2, mlp2, outputs2);
-                
+    gsl_matrix_float_free(input2); 
 
     return 0;
 }
